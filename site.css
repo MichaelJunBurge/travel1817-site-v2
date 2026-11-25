@@ -930,3 +930,152 @@ html.motion .statement.is-played:not(.is-pinned) .statement__ph--1 { transition-
   .wall__stage { z-index: 1; }
   .wall__hint { display: none; }
 }
+
+/* =====================================================================================================
+   ROUND: journeys refinements + one type style for every button and menu
+   ===================================================================================================== */
+/* continent heads: name and its count in brackets, both bold, the same size */
+.jgrp__name { font-weight: 600; }
+.jgrp__n { font: 600 clamp(1.9rem, 2.7vw, 2.9rem)/1 var(--serif); letter-spacing: -.01em; color: var(--ink); }
+
+/* the head: title stacked tight, its edge on the hover fill's edge; the aside beneath it */
+.shead--journeys .display { line-height: .8; }
+.shead--journeys .display .ln { padding-bottom: .12em; margin-bottom: -.12em; }
+@media (min-width: 901px) {
+  .shead--journeys { align-items: start; }
+  .shead--journeys .display { grid-column: 1 / span 4; margin-left: -16px; }
+  .shead--journeys .shead__aside { grid-column: 1 / span 4; margin-top: 28px; padding-bottom: 0; }
+  .journeys .jgroups { margin-top: calc(-1 * clamp(80px, 9vw, 150px)); }
+}
+
+/* rows on screens with a mouse: description and price wait for the hover */
+@media (hover: hover) and (pointer: fine) {
+  .jrow__line, .jrow__price { opacity: 0; transition: opacity .5s cubic-bezier(.25, 1, .5, 1), color .55s cubic-bezier(.25, 1, .5, 1); }
+  .jrow:hover .jrow__line, .jrow:hover .jrow__price, .jrow:focus-visible .jrow__line, .jrow:focus-visible .jrow__price { opacity: 1; }
+}
+/* the wave: rows are nudged left by the script; the nudge itself is not animated (it follows the scroll) */
+.jrow { will-change: translate; }
+
+/* ---------- one style for every button and menu: the label (small capitals, wide spacing) ---------- */
+.hdr__nav a, .hdr__cta, .ftr__cols li a, .regionbar a { font: 500 var(--t-label)/1.3 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
+.ftr__cols li a { color: var(--cream-2); }
+.ftr__cols li a:hover { color: var(--cream); }
+.regionbar a.is-active { font-style: normal; color: var(--ink); }
+.regionbar a sup { font-size: 9px; letter-spacing: .05em; }
+@media (max-width: 700px) {
+  .ftr__cols .ftr__head, .ftr__cols li, .ftr__cols a { font-size: var(--t-label); line-height: 1.3; letter-spacing: .2em; }
+}
+
+/* ---------- journeys, spacing pass (laptop): every gap is set against the text itself ---------- */
+/* the count: lining figures sit centred in the brackets, with a little air either side */
+.jgrp__n { display: inline-flex; align-items: center; font-variant-numeric: lining-nums; }
+.jgrp__n i { font-style: normal; }
+.jgrp__n b { font-weight: 600; padding: 0 .14em; font-size: .82em; position: relative; top: .01em; }
+@media (min-width: 901px) {
+  /* --jt: the title's distance from the left edge; the same distance sits above it and between the aside and the lists */
+  .journeys { --jt: calc(var(--margin) - 16px); --jb: clamp(90px, 9vw, 150px); padding-top: calc(2 * var(--jt) + 6px); padding-bottom: calc(2 * var(--jb) + 18px); }
+  .journeys .jgroups { margin-top: 0; row-gap: var(--jg, 13px); }
+  .shead--journeys { margin-bottom: calc(2 * var(--jt)); }
+  .shead--journeys .shead__aside { margin-left: -14px; margin-top: 40px; }
+  .jgrp__head { padding-bottom: var(--jh, 14px); }
+  .journeys__all { margin-top: calc(2 * var(--jb) + 9px); }
+}
+
+/* continent titles in capitals */
+.jgrp__name { text-transform: uppercase; letter-spacing: .03em; }
+/* destinations: no rule under each continent; the gap above a continent matches the gap below its title */
+.region__head { border-bottom: 0; }
+/* the space above each continent = the space from its title down to its photos (title margin + padding, measured to the letters) */
+.region:not(:first-child) { padding-top: calc(var(--tgap) + 4px); }
+
+/* continent heads: the same size as the journey names, set heavier */
+.jgrp__name, .jgrp__n { font-size: clamp(1.4rem, 1.7vw, 1.85rem); font-weight: 700; }
+.jgrp__n b { font-weight: 700; }
+.jgrp__head { will-change: translate; }
+/* each row's arrow stands centred under the digits of its continent's count (the count scales with the type, the arrow doesn't) */
+@media (min-width: 1101px) { .jgroups .jrow__go { margin-right: calc(clamp(1.4rem, 1.7vw, 1.85rem) * .8 - 12.2px); } }
+
+/* ---------- destinations, cards + headings pass ---------- */
+/* the country name stays put at the top of its photo; the hover brings the description and price up from the bottom */
+.dcard__name { position: absolute; z-index: 2; top: 0; left: 0; right: 0; padding: clamp(14px, 1.3vw, 20px); pointer-events: none; }
+.dcard__img::before { content: ""; position: absolute; z-index: 1; inset: 0 0 auto 0; height: 40%; background: linear-gradient(to bottom, rgba(21, 17, 14, .5), rgba(21, 17, 14, 0)); pointer-events: none; }
+.dcard__over .dcard__text { padding-top: 0; }
+/* headings: no count, no rule; spacing set below against the letters */
+.region__head { display: block; padding-bottom: 0; margin-bottom: var(--rb, 27px); }
+.region:not(:first-child) { padding-top: var(--ra, 28px); }
+/* triple the room after the last row */
+.destlayout { padding-bottom: calc(3 * var(--section) - 52px); } /* three times the old gap after the last row (it was the section space less 26px) */
+
+/* region bar: part of the page, not the hero. It only slides away with the header once it is pinned */
+body:not(.hdr-shown) .regionbar:not(.is-stuck) { transform: none; }
+/* the map shows only its own hover light; no bubble with the region's name */
+.atlas__tip, .destmap__tip { display: none !important; }
+/* continent titles at the size of the country names on the cards */
+.region__head .display { font-size: clamp(1.25rem, 1.45vw, 1.55rem); line-height: 1.05; letter-spacing: 0; }
+/* smaller titles, same 35px either side of them (measured cap top to baseline) */
+.region__head { margin-bottom: var(--rb, 29px); }
+.region:not(:first-child) { padding-top: var(--ra, 30px); }
+/* the list starts as far below the region bar as it ends above the next section (both measured to the letters/photos) */
+.destlayout { padding-top: calc(3 * var(--section) - 102px); }
+
+/* footer: twice the room above the link columns (and the tagline beside them), and twice the room below them before the logo */
+.ftr { padding-top: calc(2 * var(--fg) - var(--fl) * .2 + 10px); }
+.ftr .ftr__mark { margin-top: calc(2 * var(--fg) + 13px); }
+.ftr .ftr__mark svg { width: min(100%, (100svh - 4 * var(--fg) - 26px - 2 * var(--fl) - 3 * var(--fb) - 14px - 1px) * 3.96); }
+/* one list now: the arrows go back to the right edge of their rows */
+@media (min-width: 1101px) { .jgroups .jrow__go { margin-right: 0; } }
+
+/* =====================================================================================================
+   ONE LARGE PADDING for the whole site: the space "Why travel with us" sits below the top of the screen
+   (its scene is centred, so that space is a fifth of the screen height: 176px on 1440×900)
+   Each use below subtracts the small, measured gap between its box and the letters/lines it is about.
+   ===================================================================================================== */
+:root { --pad: clamp(110px, 19.6vh, 240px); }
+@media (min-width: 901px) {
+  .journeys { padding-top: var(--pad); padding-bottom: var(--pad); }
+  .shead--journeys { margin-bottom: calc(var(--pad) - 6px); }
+  .journeys__all { margin-top: calc(var(--pad) - 9px); }
+  .destlayout { padding-top: calc(var(--pad) - 23px); padding-bottom: var(--pad); }
+  .ftr { padding-top: calc(var(--pad) - 10px); }
+  .ftr .ftr__mark { margin-top: calc(var(--pad) - 13px); }
+  .ftr .ftr__mark svg { width: min(100%, (100svh - 2 * var(--pad) - 2 * var(--fl) - 3 * var(--fb) - 14px - 1px) * 3.96); }
+}
+
+/* ---------- the padding unit everywhere (laptop and up) ---------- */
+@media (min-width: 901px) {
+  /* every regular section: the unit above and below its content */
+  :root { --section: var(--pad); }
+  .atlas { align-items: start; }
+  /* pinned scenes start their content the unit's distance below the top of the screen, as "Why travel with us" does */
+  .reviews.is-pinned .pin__stage, .story.is-pinned .pin__stage, .founder.is-pinned .pin__stage, .promises.is-pinned .pin__stage { align-items: start; box-sizing: border-box; padding-top: var(--pad); }
+  .reviews.is-pinned .wrap { padding-top: 0; }
+}
+@media (min-width: 901px) {
+  /* map section: words and map both start at the top; the section is as tall as its content plus the unit either side */
+  .atlas { min-height: 0; }
+  .atlas__top { align-items: start; }
+  /* small measured trims so each scene's first line lands on the unit */
+  .reviews.is-pinned .pin__stage, .promises.is-pinned .pin__stage { padding-top: calc(var(--pad) - 5px); }
+  .founder.is-pinned .pin__stage { padding-top: calc(var(--pad) + 6px); }
+  .plan { padding-top: calc(var(--pad) - 8px); padding-bottom: calc(var(--pad) - 99px); }
+}
+@media (min-width: 901px) {
+  .atlas { padding-top: calc(var(--pad) - 4px); padding-bottom: calc(var(--pad) - 5px); }
+  .story.is-pinned .pin__stage { padding-top: calc(var(--pad) + 6px); }
+}
+/* the map section always fills the screen: the words still start a padding unit down; the night runs to the bottom */
+@media (min-width: 901px) { .atlas { min-height: 100vh; min-height: 100svh; } }
+
+/* every large serif title: the tight line spacing of "Featured / journeys" (0.8 of the type size), so stacked lines read as one block */
+.display, .h2, .convo__line, .hero__title, .ftr__line { line-height: .8; }
+.phero .display, .phero__head .display { line-height: .8; }
+/* re-trimmed after the tighter title spacing, so first lines land on the padding unit again */
+@media (min-width: 901px) {
+  .atlas { padding-top: calc(var(--pad) + 1px); }
+  .why.is-pinned .pin__stage { align-items: start; box-sizing: border-box; padding-top: calc(var(--pad) - 15px); }
+  .why.is-pinned .why__wrap { padding-top: 0; }
+  .reviews.is-pinned .pin__stage { padding-top: calc(var(--pad) - 1px); }
+  .promises.is-pinned .pin__stage { padding-top: calc(var(--pad) + 1px); }
+  .ftr { padding-top: calc(var(--pad) - 4px); }
+  .ftr .ftr__mark { margin-top: calc(var(--pad) - 8px); }
+}

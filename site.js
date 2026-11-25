@@ -197,6 +197,20 @@
       const y = top + (0.04 + ((i + 0.3) / 4) * 0.88) * span; lenis ? lenis.scrollTo(y, { duration: 1.2, force: true }) : scrollTo({ top: y, behavior: 'smooth' });
     }));
   }
+  // pinned scenes start a padding unit below the top of the screen; one too tall to do that and still clear the bottom
+  // by a comfortable margin is centred instead, so nothing is ever cut off
+  const fitStages = $$('.reviews.is-pinned .pin__stage, .story.is-pinned .pin__stage, .founder.is-pinned .pin__stage, .promises.is-pinned .pin__stage');
+  const fitScenes = () => fitStages.forEach((st) => {
+    st.style.paddingTop = '';
+    if (innerWidth < 901) return;
+    const base = parseFloat(getComputedStyle(st).paddingTop) || 0; const top0 = st.getBoundingClientRect().top;
+    const kids = [...st.querySelectorAll('*')].filter((k) => k.offsetHeight > 0 && getComputedStyle(k).position !== 'absolute');
+    const lo = Math.min(...kids.map((k) => k.getBoundingClientRect().top)) - top0, hi = Math.max(...kids.map((k) => k.getBoundingClientRect().bottom)) - top0;
+    const h = hi - lo, room = innerHeight - hi;
+    if (room < 56) st.style.paddingTop = `${Math.max(20, base + (innerHeight - h) / 2 - lo).toFixed(0)}px`;
+  });
+  fitScenes(); (document.fonts ? document.fonts.ready : Promise.resolve()).then(fitScenes);
+  let fsT = 0; addEventListener('resize', () => { clearTimeout(fsT); fsT = setTimeout(fitScenes, 200); });
   // [data-seq] lists: each item waits for the one before it, so they play one at a time however fast you scroll
   const seqGap = 1100;
   const turnOnNow = (el) => { el.classList.add('is-on', 'is-in'); settle(el); el.dispatchEvent(new Event('on')); };
@@ -406,7 +420,8 @@
   // held sections: glide into place and hold until the entrance has played (downward, first pass only)
   const gates = motion ? $$('[data-hold]') : [];
   const arrive = (sec) => {
-    const now = $$('[data-rise]:not(.is-in), [data-lines]:not(.is-in)', sec).filter((el) => sec.hasAttribute('data-reveal-all') || el.getBoundingClientRect().top < innerHeight);
+    // [data-solo] parts (the continent titles) keep their own entrance: they play as they reach the screen
+    const now = $$('[data-rise]:not(.is-in), [data-lines]:not(.is-in)', sec).filter((el) => (sec.hasAttribute('data-reveal-all') && !el.closest('[data-solo]')) || el.getBoundingClientRect().top < innerHeight);
     now.forEach((el) => { io.unobserve(el); queue.push(el); });
     if (queue.length && !timer) timer = requestAnimationFrame(flush);
     sec.classList.add('is-arrived'); sec.dispatchEvent(new Event('arrive'));
@@ -657,21 +672,47 @@
     // the photo lives in the empty column between the name and the price; it only follows the cursor up and down,
     // drifting a little sideways, so it can never cover the trip details
     const rows = $$('.jrow', list); let cur = 0, rot = 0;
-    // the photo sits in the empty third beside the row's own list: left of a right-hand list, right of a left-hand one,
-    // leaning toward the list, and following the row up and down
+    // the photo is centred between the left edge of the screen and the row's number, leaning a little toward the list,
+    // and follows the row up and down
     const place = () => {
-      const w = jf.offsetWidth, h = jf.offsetHeight; const row = rows[cur]; const grp = row.closest('.jgrp');
-      const gr = grp.getBoundingClientRect(); const lr = list.getBoundingClientRect(); const rr = row.getBoundingClientRect();
-      const onLeft = grp.classList.contains('jgrp--r');
-      const z0 = onLeft ? lr.left : gr.right, z1 = onLeft ? gr.left : lr.right;
-      const k = $$('.jrow', grp).indexOf(row);
-      tx = (z0 + z1) / 2 - w / 2 + (onLeft ? 1 : -1) * Math.min(24, k * 6); rot = (onLeft ? -1 : 1) * (3 + (k % 3) * 1.6);
+      const w = jf.offsetWidth, h = jf.offsetHeight; const row = rows[cur]; const rr = row.getBoundingClientRect();
+      const nLeft = row.querySelector('.jrow__n').getBoundingClientRect().left;
+      const k = rows.indexOf(row);
+      tx = nLeft / 2 - w / 2; rot = -(3 + (k % 3) * 1.6);
       ty = clamp(rr.top + rr.height / 2 - h / 2, 70, innerHeight - h - 20);
     };
     list.addEventListener('pointermove', () => { place(); if (!on) { x = tx; y = ty; } if (!raf) raf = requestAnimationFrame(step); });
     addEventListener('scroll', () => { if (on) { place(); if (!raf) raf = requestAnimationFrame(step); } }, { passive: true });
     rows.forEach((row, i) => row.addEventListener('pointerenter', () => { cur = i; on = true; jf.classList.add('is-on'); imgs.forEach((im) => im.classList.toggle('is-on', im.dataset.for === row.dataset.img)); }));
     list.addEventListener('pointerleave', () => { on = false; jf.classList.remove('is-on'); });
+  }
+
+  // ---------- the journeys wave: the row under the mouse leans out to the left, its neighbours a little less, and so
+  // on (a bell curve). It follows the mouse, not the scroll, and settles back flat when the mouse leaves the list.
+  // Touch screens have no mouse: there the row at the middle of the screen leans, as you scroll. ----------
+  const waveRows = motion ? $$('.jgroups .jrow') : [];
+  if (waveRows.length) {
+    const A = fine ? 58 : 26;                      // the furthest lean, px
+    const now = waveRows.map(() => 0); let my = null, wr = 0;
+    const tick = () => {
+      wr = 0; const vh = innerHeight, sigma = vh * (fine ? 0.15 : 0.12); const centre = fine ? my : vh / 2;
+      const tops = waveRows.map((r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; }); // the lean is sideways only, so it never moves these
+      let moving = false;
+      waveRows.forEach((r, i) => {
+        const d = centre === null ? 9 : (tops[i] - centre) / sigma; const target = Math.abs(d) > 4 ? 0 : -A * Math.exp(-d * d);
+        now[i] += (target - now[i]) * (fine ? 0.085 : 0.16); // eased: quick to start, slow to settle, going out and coming back
+        if (Math.abs(target - now[i]) > 0.1) moving = true; else now[i] = target;
+        r.style.translate = `${now[i].toFixed(1)}px 0`;
+      });
+      if (moving) wr = requestAnimationFrame(tick);
+    };
+    const kick = () => { if (!wr) wr = requestAnimationFrame(tick); };
+    if (fine) {
+      const zone = document.querySelector('.jgroups');
+      zone.addEventListener('pointermove', (e) => { my = e.clientY; kick(); });
+      zone.addEventListener('pointerleave', () => { my = null; kick(); });
+      addEventListener('scroll', () => { if (my !== null) kick(); }, { passive: true }); // the list slides under a still mouse
+    } else { addEventListener('scroll', kick, { passive: true }); addEventListener('resize', kick); kick(); }
   }
 
   // postcards turn over
@@ -685,7 +726,12 @@
   // ---------- destinations: region bar + a tall map that follows the region you're reading ----------
   const bar = $$('.regionbar a');
   const rbar = document.querySelector('.regionbar'); const dlay = document.querySelector('.destlayout');
-  if (rbar && dlay) { const out = () => rbar.classList.toggle('is-out', dlay.getBoundingClientRect().bottom < 160); addEventListener('scroll', out, { passive: true }); out(); }
+  if (rbar && dlay) {
+    // the bar only steps aside with the header once it is pinned at the top; until then it stays put under the hero
+    const hero = document.querySelector('.phero');
+    const out = () => { rbar.classList.toggle('is-out', dlay.getBoundingClientRect().bottom < 160); if (hero) rbar.classList.toggle('is-stuck', hero.getBoundingClientRect().bottom <= 1); };
+    addEventListener('scroll', out, { passive: true }); out();
+  }
   if (bar.length) {
     const rio = new IntersectionObserver((ens) => ens.forEach((en) => { if (en.isIntersecting) bar.forEach((a) => a.classList.toggle('is-active', a.hash === `#${en.target.id}`)); }), { rootMargin: '-40% 0px -55% 0px' });
     $$('.region').forEach((r) => rio.observe(r));
